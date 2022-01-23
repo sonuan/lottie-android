@@ -85,9 +85,6 @@ fun LottieAnimation(
     val drawable = remember { LottieDrawable() }
     val matrix = remember { Matrix() }
     var setDynamicProperties: LottieDynamicProperties? by remember { mutableStateOf(null) }
-    val useSoftwareRendering: Boolean = remember(renderMode, composition) {
-        renderMode.useSoftwareRendering(Build.VERSION.SDK_INT, composition?.hasDashPattern() ?: false, composition?.maskAndMatteCount ?: 0)
-    }
 
     if (composition == null || composition.duration == 0f) return Box(modifier)
 
@@ -114,7 +111,7 @@ fun LottieAnimation(
             }
             drawable.setOutlineMasksAndMattes(outlineMasksAndMattes)
             drawable.isApplyingOpacityToLayersEnabled = applyOpacityToLayers
-            drawable.useSoftwareRendering(useSoftwareRendering)
+            drawable.renderMode = renderMode
             drawable.maintainOriginalImageBounds = maintainOriginalImageBounds
             drawable.clipToCompositionBounds = clipToComposition
             drawable.progress = progress

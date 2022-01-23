@@ -13,7 +13,7 @@
 
   * Reduced memory consumption. In the hardware case, no new memory is allocated. In the software case, Lottie will create a bitmap that is the intersection of your View/Composition bounds mapped with the drawing transformation which often yields a surface are that is smaller than the entire LottieAnimationView.
   * lottie-compose now supports setting a RenderMode.
-  * Custom uses of LottieDrawable now support setting a RenderMode via [useSoftwareRendering](https://github.com/airbnb/lottie-android/blob/c5b8318c7cf205e95db143955acbfc69f86bc339/lottie/src/main/java/com/airbnb/lottie/LottieDrawable.java#L329).
+  * Custom uses of LottieDrawable now support setting a RenderMode via [setRenderMode](https://github.com/airbnb/lottie-android/blob/c5b8318c7cf205e95db143955acbfc69f86bc339/lottie/src/main/java/com/airbnb/lottie/LottieDrawable.java#L329).
   * Lottie can now render outside of its composition bounds via [setClipToCompositionBounds](https://github.com/airbnb/lottie-android/blob/c5b8318c7cf205e95db143955acbfc69f86bc339/lottie/src/main/java/com/airbnb/lottie/LottieDrawable.java#L218).
     Unless you are using one of the new APIs, you should not have to change anything in your code as a result of this page. It is intended to be an entirely internal implementation detail
     that should improve performance by default and allow for new functionality.

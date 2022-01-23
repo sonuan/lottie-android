@@ -122,7 +122,8 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
   private boolean isApplyingOpacityToLayersEnabled;
 
   private final Matrix renderingMatrix = new Matrix();
-  private boolean softwareRenderingEnabled = false;
+  private RenderMode renderMode = RenderMode.AUTOMATIC;
+  private boolean useSoftwareRendering = false;
   private Bitmap softwareRenderingBitmap;
   private final LPaint softwareRenderingClearPaint = new LPaint();
   private final Canvas softwareRenderingCanvas = new Canvas();
@@ -308,6 +309,7 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
     lazyCompositionTasks.clear();
 
     composition.setPerformanceTrackingEnabled(performanceTrackingEnabled);
+    computeRenderMode();
 
     // Ensure that ImageView updates the drawable width/height so it can
     // properly calculate its drawable matrix.
@@ -321,17 +323,41 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
   }
 
   /**
-   * When set to true, Lottie will first render your animation to a bitmap and then draw the bitmap
-   * onto the original canvas.
+   * Call this to set whether or not to render with hardware or software acceleration.
+   * Lottie defaults to Automatic which will use hardware acceleration unless:
+   * 1) There are dash paths and the device is pre-Pie.
+   * 2) There are more than 4 masks and mattes and the device is pre-Pie.
+   * Hardware acceleration is generally faster for those devices unless
+   * there are many large mattes and masks in which case there is a lot
+   * of GPU uploadTexture thrashing which makes it much slower.
+   * <p>
+   * In most cases, hardware rendering will be faster, even if you have mattes and masks.
+   * However, if you have multiple mattes and masks (especially large ones), you
+   * should test both render modes. You should also test on pre-Pie and Pie+ devices
+   * because the underlying rendering engine changed significantly.
    *
-   * @see LottieAnimationView#setRenderMode(RenderMode)
+   * @see <a href="https://developer.android.com/guide/topics/graphics/hardware-accel#unsupported">Android Hardware Acceleration</a>
    */
-  public void useSoftwareRendering(boolean softwareRenderingEnabled) {
-    if (this.softwareRenderingEnabled == softwareRenderingEnabled) {
+  public void setRenderMode(RenderMode renderMode) {
+    this.renderMode = renderMode;
+    computeRenderMode();
+  }
+
+  /**
+   * Returns the actual render mode being used. It will always be {@link RenderMode#HARDWARE} or {@link RenderMode#SOFTWARE}.
+   * When the render mode is set to AUTOMATIC, the value will be derived from {@link RenderMode#useSoftwareRendering(int, boolean, int)}.
+   */
+  public RenderMode getRenderMode() {
+    return useSoftwareRendering ? RenderMode.SOFTWARE : RenderMode.HARDWARE;
+  }
+
+  private void computeRenderMode() {
+    LottieComposition composition = this.composition;
+    if (composition == null) {
       return;
     }
-    this.softwareRenderingEnabled = softwareRenderingEnabled;
-    invalidateSelf();
+    useSoftwareRendering = renderMode.useSoftwareRendering(
+        Build.VERSION.SDK_INT, composition.hasDashPattern(), composition.getMaskAndMatteCount());
   }
 
   public void setPerformanceTrackingEnabled(boolean enabled) {
@@ -536,6 +562,7 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
       return;
     }
 
+    computeRenderMode();
     if (animationsEnabled() || getRepeatCount() == 0) {
       if (isVisible()) {
         animator.playAnimation();
@@ -572,6 +599,7 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
       return;
     }
 
+    computeRenderMode();
     if (animationsEnabled() || getRepeatCount() == 0) {
       if (isVisible()) {
         animator.resumeAnimation();
@@ -1308,7 +1336,7 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
       return;
     }
 
-    if (softwareRenderingEnabled) {
+    if (useSoftwareRendering) {
       canvas.save();
       canvas.concat(matrix);
       renderAndDrawAsBitmap(canvas, compositionLayer);
@@ -1325,7 +1353,7 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
       return;
     }
 
-    if (softwareRenderingEnabled) {
+    if (useSoftwareRendering) {
       renderAndDrawAsBitmap(canvas, compositionLayer);
     } else {
       Rect bounds = getBounds();
@@ -1347,7 +1375,7 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
       return;
     }
 
-    if (softwareRenderingEnabled) {
+    if (useSoftwareRendering) {
       renderAndDrawAsBitmap(canvas, compositionLayer);
     } else {
       renderingMatrix.reset();
@@ -1360,7 +1388,6 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
    * This is the software rendering pipeline. This draws the animation to an internally managed bitmap
    * and then draws the bitmap to the original canvas.
    *
-   * @see LottieDrawable#useSoftwareRendering(boolean)
    * @see LottieAnimationView#setRenderMode(RenderMode)
    */
   private void renderAndDrawAsBitmap(Canvas originalCanvas, CompositionLayer compositionLayer) {
