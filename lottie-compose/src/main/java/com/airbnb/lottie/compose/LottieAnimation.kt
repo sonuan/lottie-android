@@ -103,6 +103,7 @@ fun LottieAnimation(
             matrix.preScale(scale.scaleX, scale.scaleY)
 
             drawable.enableMergePathsForKitKatAndAbove(enableMergePaths)
+            drawable.renderMode = renderMode
             drawable.composition = composition
             if (dynamicProperties !== setDynamicProperties) {
                 setDynamicProperties?.removeFrom(drawable)
@@ -111,7 +112,6 @@ fun LottieAnimation(
             }
             drawable.setOutlineMasksAndMattes(outlineMasksAndMattes)
             drawable.isApplyingOpacityToLayersEnabled = applyOpacityToLayers
-            drawable.renderMode = renderMode
             drawable.maintainOriginalImageBounds = maintainOriginalImageBounds
             drawable.clipToCompositionBounds = clipToComposition
             drawable.progress = progress
