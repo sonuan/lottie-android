@@ -122,7 +122,7 @@ afterEvaluate {
       maven(MavenPublication) {
         groupId = "com.airbnb.android"
         artifactId = "lottie"
-        version = "3.7.0_fix"
+        version = "3.7.0.001_fix"
         from components.release
         artifact(sourcesJar)
       }
