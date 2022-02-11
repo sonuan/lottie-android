@@ -131,6 +131,13 @@ public class ImageAssetManager {
       Logger.warning("Unable to decode image.", e);
       return null;
     }
+    if (bitmap == null) {
+      // 排查是哪个文件出错了
+      if (errorListener != null) {
+        errorListener.onError(imagesFolder + filename);
+      }
+      return null;
+    }
     bitmap = Utils.resizeBitmapIfNeeded(bitmap, asset.getWidth(), asset.getHeight());
     return putBitmap(id, bitmap);
   }
@@ -144,5 +151,21 @@ public class ImageAssetManager {
       imageAssets.get(key).setBitmap(bitmap);
       return bitmap;
     }
+  }
+
+  /**
+   * 从外面设置一个监听
+   */
+  public static onErrorListener errorListener;
+
+  /**
+   * 监听错误情况
+   */
+  public interface onErrorListener {
+    /**
+     * 回调信息，传出出错的路径
+     * @param path
+     */
+    void onError(String path);
   }
 }

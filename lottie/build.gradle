@@ -2,7 +2,7 @@ import net.ltgt.gradle.errorprone.CheckSeverity
 
 apply plugin: 'com.android.library'
 apply plugin: 'net.ltgt.errorprone'
-apply plugin: 'com.vanniktech.maven.publish'
+//apply plugin: 'com.vanniktech.maven.publish'
 
 android {
   compileSdkVersion 29
@@ -28,14 +28,14 @@ android {
   }
 }
 
-mavenPublish {
-  targets {
-    uploadArchives {
-      repositoryUsername = project.hasProperty('SONATYPE_USERNAME') ? SONATYPE_USERNAME : ""
-      repositoryPassword = project.hasProperty('SONATYPE_PASSWORD') ? SONATYPE_PASSWORD : ""
-    }
-  }
-}
+//mavenPublish {
+//  targets {
+//    uploadArchives {
+//      repositoryUsername = project.hasProperty('SONATYPE_USERNAME') ? SONATYPE_USERNAME : ""
+//      repositoryPassword = project.hasProperty('SONATYPE_PASSWORD') ? SONATYPE_PASSWORD : ""
+//    }
+//  }
+//}
 
 dependencies {
   implementation "androidx.appcompat:appcompat:1.0.0"
@@ -51,24 +51,24 @@ dependencies {
   testImplementation "org.robolectric:robolectric:4.4"
 }
 
-task sourcesJar(type: Jar) {
-  from android.sourceSets.main.java.srcDirs
-  classifier = 'sources'
-}
-
-task javadoc(type: Javadoc) {
-  source = android.sourceSets.main.java.srcDirs
-  configurations.implementation.setCanBeResolved(true)
-  classpath += project.files(android.getBootClasspath().join(File.pathSeparator)) + configurations.implementation
-}
-
-tasks.withType(Javadoc) {
-  // This started failing with the following when upgrading to AGP 7 and JDK 11.
-  // TODO: investigate why once AGP 7 is stable.
-  // javadoc: error - The code being documented uses modules but the packages defined in https://developer.android.com/reference/ are in the unnamed module.
-  failOnError false
-}
-
+//task sourcesJar(type: Jar) {
+//  from android.sourceSets.main.java.srcDirs
+//  classifier = 'sources'
+//}
+//
+//task javadoc(type: Javadoc) {
+//  source = android.sourceSets.main.java.srcDirs
+//  configurations.implementation.setCanBeResolved(true)
+//  classpath += project.files(android.getBootClasspath().join(File.pathSeparator)) + configurations.implementation
+//}
+//
+//tasks.withType(Javadoc) {
+//  // This started failing with the following when upgrading to AGP 7 and JDK 11.
+//  // TODO: investigate why once AGP 7 is stable.
+//  // javadoc: error - The code being documented uses modules but the packages defined in https://developer.android.com/reference/ are in the unnamed module.
+//  failOnError false
+//}
+//
 tasks.withType(JavaCompile) {
   // remove the if condition if you want to run NullAway on test code
   if (!name.toLowerCase().contains("test")) {
@@ -98,3 +98,34 @@ tasks.withType(JavaCompile) {
 //    allprojects { ext."signing.password" = System.getenv("GRADLE_SIGNING_PASSWORD") }
 //  }
 //}
+
+apply plugin: 'maven-publish'
+
+task sourcesJar(type: Jar) {
+  from android.sourceSets.main.java.srcDirs
+  archiveClassifier.set("sources")
+}
+
+afterEvaluate {
+  publishing {
+    repositories {
+      maven {
+        allowInsecureProtocol true
+        url "http://android.internal.taqu.cn:8081/repository/maven-releases/"
+        credentials {
+          username "android"
+          password "android"
+        }
+      }
+    }
+    publications {
+      maven(MavenPublication) {
+        groupId = "com.airbnb.android"
+        artifactId = "lottie"
+        version = "3.7.0_fix"
+        from components.release
+        artifact(sourcesJar)
+      }
+    }
+  }
+}
