@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Rect;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RawRes;
 import androidx.annotation.RestrictTo;
@@ -17,6 +18,7 @@ import com.airbnb.lottie.model.Marker;
 import com.airbnb.lottie.model.layer.Layer;
 import com.airbnb.lottie.parser.moshi.JsonReader;
 import com.airbnb.lottie.utils.Logger;
+import com.airbnb.lottie.utils.MiscUtils;
 
 import org.json.JSONObject;
 
@@ -29,7 +31,7 @@ import java.util.Map;
 
 /**
  * After Effects/Bodymovin composition model. This is the serialized model from which the
- * animation will be created.
+ * animation will be created. It is designed to be stateless, cacheable, and shareable.
  * <p>
  * To create one, use {@link LottieCompositionFactory}.
  * <p>
@@ -150,6 +152,16 @@ public class LottieComposition {
     return endFrame;
   }
 
+  public float getFrameForProgress(float progress) {
+    return MiscUtils.lerp(startFrame, endFrame, progress);
+  }
+
+  public float getProgressForFrame(float frame) {
+    float framesSinceStart = frame - startFrame;
+    float frameRange = endFrame - startFrame;
+    return framesSinceStart / frameRange;
+  }
+
   public float getFrameRate() {
     return frameRate;
   }
@@ -192,7 +204,12 @@ public class LottieComposition {
     return !images.isEmpty();
   }
 
-  @SuppressWarnings("WeakerAccess") public Map<String, LottieImageAsset> getImages() {
+  /**
+   * Returns a map of image asset id to {@link LottieImageAsset}. These assets contain image metadata exported
+   * from After Effects or other design tool. The resulting Bitmaps can be set directly on the image asset so
+   * they can be loaded once and reused across compositions.
+   */
+  public Map<String, LottieImageAsset> getImages() {
     return images;
   }
 
@@ -201,7 +218,9 @@ public class LottieComposition {
   }
 
 
-  @Override public String toString() {
+  @NonNull
+  @Override
+  public String toString() {
     final StringBuilder sb = new StringBuilder("LottieComposition:\n");
     for (Layer layer : layers) {
       sb.append(layer.toString("\t"));
@@ -318,6 +337,7 @@ public class LottieComposition {
     @WorkerThread
     @Deprecated
     public static LottieComposition fromJsonSync(@SuppressWarnings("unused") Resources res, JSONObject json) {
+      //noinspection deprecation
       return LottieCompositionFactory.fromJsonSync(json, null).getValue();
     }
 

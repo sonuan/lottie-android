@@ -12,7 +12,13 @@ import com.airbnb.lottie.samples.views.animationItemView
 import com.airbnb.lottie.samples.views.loadingView
 import com.airbnb.lottie.samples.views.marquee
 import com.airbnb.lottie.samples.views.showcaseCarousel
-import com.airbnb.mvrx.*
+import com.airbnb.mvrx.Async
+import com.airbnb.mvrx.MvRxState
+import com.airbnb.mvrx.MvRxViewModelFactory
+import com.airbnb.mvrx.Uninitialized
+import com.airbnb.mvrx.ViewModelContext
+import com.airbnb.mvrx.fragmentViewModel
+import com.airbnb.mvrx.withState
 
 data class ShowcaseState(val response: Async<AnimationResponseV2> = Uninitialized) : MvRxState
 
@@ -34,24 +40,21 @@ class ShowcaseViewModel(initialState: ShowcaseState, api: LottiefilesApi) : MvRx
 class ShowcaseFragment : BaseEpoxyFragment() {
 
     private val showcaseItems = listOf(
-            ShowcaseItem(R.drawable.showcase_preview_lottie, R.string.showcase_item_app_intro) {
-                startActivity(Intent(requireContext(), AppIntroActivity::class.java))
-            },
-            ShowcaseItem(R.drawable.showcase_preview_lottie, R.string.showcase_item_dynamic_properties) {
-                startActivity(Intent(requireContext(), DynamicActivity::class.java))
-            },
-            ShowcaseItem(R.drawable.gilbert_animated, R.string.showcase_item_animated_text) {
-                startActivity(Intent(requireContext(), TypographyDemoActivity::class.java))
-            },
-            ShowcaseItem(R.drawable.gilbert_animated, R.string.showcase_item_dynamic_text) {
-                startActivity(Intent(requireContext(), DynamicTextActivity::class.java))
-            },
-            ShowcaseItem(R.drawable.showcase_preview_lottie, R.string.showcase_item_bullseye) {
-                startActivity(Intent(requireContext(), BullseyeActivity::class.java))
-            },
-            ShowcaseItem(R.drawable.showcase_preview_lottie, R.string.showcase_item_recycler_view) {
-                startActivity(Intent(requireContext(), WishListActivity::class.java))
-            }
+        ShowcaseItem(R.drawable.showcase_preview_lottie, R.string.showcase_item_dynamic_properties) {
+            it.startActivity(Intent(it, DynamicActivity::class.java))
+        },
+        ShowcaseItem(R.drawable.gilbert_animated, R.string.showcase_item_animated_text) {
+            it.startActivity(Intent(it, TypographyDemoActivity::class.java))
+        },
+        ShowcaseItem(R.drawable.gilbert_animated, R.string.showcase_item_dynamic_text) {
+            it.startActivity(Intent(it, DynamicTextActivity::class.java))
+        },
+        ShowcaseItem(R.drawable.showcase_preview_lottie, R.string.showcase_item_bullseye) {
+            it.startActivity(Intent(it, BullseyeActivity::class.java))
+        },
+        ShowcaseItem(R.drawable.showcase_preview_lottie, R.string.showcase_item_recycler_view) {
+            it.startActivity(Intent(it, WishListActivity::class.java))
+        }
     )
     private val viewModel: ShowcaseViewModel by fragmentViewModel()
 
@@ -73,12 +76,13 @@ class ShowcaseFragment : BaseEpoxyFragment() {
             }
         } else {
             collectionItems.forEach {
+                val activityContext = requireActivity()
                 animationItemView {
                     id(it.id)
                     title(it.title)
-                    previewUrl("https://assets9.lottiefiles.com/${it.preview}")
+                    if (it.preview != null) previewUrl("https://assets9.lottiefiles.com/${it.preview}")
                     previewBackgroundColor(it.bgColorInt)
-                    onClickListener { _ -> startActivity(PlayerActivity.intent(requireContext(), CompositionArgs(animationDataV2 = it))) }
+                    onClickListener { _ -> activityContext.startActivity(PlayerActivity.intent(activityContext, CompositionArgs(animationDataV2 = it))) }
                 }
             }
         }

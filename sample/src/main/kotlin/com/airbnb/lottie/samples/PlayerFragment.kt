@@ -22,7 +22,11 @@ import androidx.transition.AutoTransition
 import androidx.transition.TransitionManager
 import com.airbnb.epoxy.EpoxyController
 import com.airbnb.epoxy.EpoxyRecyclerView
-import com.airbnb.lottie.*
+import com.airbnb.lottie.FontAssetDelegate
+import com.airbnb.lottie.L
+import com.airbnb.lottie.LottieAnimationView
+import com.airbnb.lottie.LottieComposition
+import com.airbnb.lottie.RenderMode
 import com.airbnb.lottie.model.KeyPath
 import com.airbnb.lottie.samples.databinding.PlayerFragmentBinding
 import com.airbnb.lottie.samples.model.CompositionArgs
@@ -41,7 +45,6 @@ import com.github.mikephil.charting.data.LineDataSet
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.snackbar.Snackbar
 import kotlin.math.abs
-import kotlin.math.min
 import kotlin.math.roundToInt
 
 class PlayerFragment : BaseMvRxFragment(R.layout.player_fragment) {
@@ -77,19 +80,19 @@ class PlayerFragment : BaseMvRxFragment(R.layout.player_fragment) {
     }
 
     private val animatorListener = AnimatorListenerAdapter(
-            onStart = { binding.controlBarPlayerControls.playButton.isActivated = true },
-            onEnd = {
-                binding.controlBarPlayerControls.playButton.isActivated = false
-                binding.animationView.performanceTracker?.logRenderTimes()
-                updateRenderTimesPerLayer()
-            },
-            onCancel = {
-                binding.controlBarPlayerControls.playButton.isActivated = false
-            },
-            onRepeat = {
-                binding.animationView.performanceTracker?.logRenderTimes()
-                updateRenderTimesPerLayer()
-            }
+        onStart = { binding.controlBarPlayerControls.playButton.isActivated = true },
+        onEnd = {
+            binding.controlBarPlayerControls.playButton.isActivated = false
+            binding.animationView.performanceTracker?.logRenderTimes()
+            updateRenderTimesPerLayer()
+        },
+        onCancel = {
+            binding.controlBarPlayerControls.playButton.isActivated = false
+        },
+        onRepeat = {
+            binding.animationView.performanceTracker?.logRenderTimes()
+            updateRenderTimesPerLayer()
+        }
     )
 
     @SuppressLint("SetTextI18n")
@@ -108,7 +111,7 @@ class PlayerFragment : BaseMvRxFragment(R.layout.player_fragment) {
         })
 
         val args = arguments?.getParcelable<CompositionArgs>(EXTRA_ANIMATION_ARGS)
-                ?: throw IllegalArgumentException("No composition args specified")
+            ?: throw IllegalArgumentException("No composition args specified")
         args.animationData?.bgColorInt?.let {
             binding.controlBarBackgroundColor.backgroundButton1.setBackgroundColor(it)
             binding.animationContainer.setBackgroundColor(it)
@@ -145,20 +148,20 @@ class PlayerFragment : BaseMvRxFragment(R.layout.player_fragment) {
         viewModel.selectSubscribe(PlayerState::borderVisible) {
             binding.controlBar.borderToggle.isActivated = it
             binding.controlBar.borderToggle.setImageResource(
-                    if (it) R.drawable.ic_border_on
-                    else R.drawable.ic_border_off
+                if (it) R.drawable.ic_border_on
+                else R.drawable.ic_border_off
             )
             binding.animationView.setBackgroundResource(if (it) R.drawable.outline else 0)
         }
 
         binding.controlBar.hardwareAccelerationToggle.setOnClickListener {
-            val renderMode = if (binding.animationView.layerType == View.LAYER_TYPE_HARDWARE) {
+            val renderMode = if (binding.animationView.renderMode == RenderMode.HARDWARE) {
                 RenderMode.SOFTWARE
             } else {
                 RenderMode.HARDWARE
             }
-            binding.animationView.setRenderMode(renderMode)
-            binding.controlBar.hardwareAccelerationToggle.isActivated = binding.animationView.layerType == View.LAYER_TYPE_HARDWARE
+            binding.animationView.renderMode = renderMode
+            binding.controlBar.hardwareAccelerationToggle.isActivated = binding.animationView.renderMode == RenderMode.HARDWARE
         }
 
         binding.controlBar.enableApplyingOpacityToLayers.setOnClickListener {
@@ -192,13 +195,6 @@ class PlayerFragment : BaseMvRxFragment(R.layout.player_fragment) {
             binding.controlBarBackgroundColor.backgroundColorContainer.animateVisible(it)
         }
 
-        binding.controlBar.scaleToggle.setOnClickListener { viewModel.toggleScaleVisible() }
-        binding.controlBarScale.closeScaleButton.setOnClickListener { viewModel.setScaleVisible(false) }
-        viewModel.selectSubscribe(PlayerState::scaleVisible) {
-            binding.controlBar.scaleToggle.isActivated = it
-            binding.controlBarScale.scaleContainer.animateVisible(it)
-        }
-
         binding.controlBar.trimToggle.setOnClickListener { viewModel.toggleTrimVisible() }
         binding.controlBarTrim.closeTrimButton.setOnClickListener { viewModel.setTrimVisible(false) }
         viewModel.selectSubscribe(PlayerState::trimVisible) {
@@ -221,24 +217,24 @@ class PlayerFragment : BaseMvRxFragment(R.layout.player_fragment) {
         viewModel.selectSubscribe(PlayerState::speed) {
             binding.animationView.speed = it
             binding.controlBarSpeed.speedButtonsContainer
-                    .children
-                    .filterIsInstance<ControlBarItemToggleView>()
-                    .forEach { toggleView ->
-                        toggleView.isActivated = toggleView.getText().replace("x", "").toFloat() == binding.animationView.speed
-                    }
+                .children
+                .filterIsInstance<ControlBarItemToggleView>()
+                .forEach { toggleView ->
+                    toggleView.isActivated = toggleView.getText().replace("x", "").toFloat() == binding.animationView.speed
+                }
         }
         binding.controlBarSpeed.speedButtonsContainer
-                .children
-                .filterIsInstance(ControlBarItemToggleView::class.java)
-                .forEach { child ->
-                    child.setOnClickListener {
-                        val speed = (it as ControlBarItemToggleView)
-                                .getText()
-                                .replace("x", "")
-                                .toFloat()
-                        viewModel.setSpeed(speed)
-                    }
+            .children
+            .filterIsInstance(ControlBarItemToggleView::class.java)
+            .forEach { child ->
+                child.setOnClickListener {
+                    val speed = (it as ControlBarItemToggleView)
+                        .getText()
+                        .replace("x", "")
+                        .toFloat()
+                    viewModel.setSpeed(speed)
                 }
+            }
 
 
         binding.controlBarPlayerControls.loopButton.setOnClickListener { viewModel.toggleLoop() }
@@ -250,21 +246,22 @@ class PlayerFragment : BaseMvRxFragment(R.layout.player_fragment) {
         binding.controlBarPlayerControls.playButton.isActivated = binding.animationView.isAnimating
 
         binding.controlBarPlayerControls.seekBar.setOnSeekBarChangeListener(OnSeekBarChangeListenerAdapter(
-                onProgressChanged = { _, progress, _ ->
-                    if (binding.controlBarPlayerControls.seekBar.isPressed && progress in 1..4) {
-                        binding.controlBarPlayerControls.seekBar.progress = 0
-                        return@OnSeekBarChangeListenerAdapter
-                    }
-                    if (binding.animationView.isAnimating) return@OnSeekBarChangeListenerAdapter
-                    binding.animationView.progress = progress / binding.controlBarPlayerControls.seekBar.max.toFloat()
+            onProgressChanged = { _, progress, _ ->
+                if (binding.controlBarPlayerControls.seekBar.isPressed && progress in 1..4) {
+                    binding.controlBarPlayerControls.seekBar.progress = 0
+                    return@OnSeekBarChangeListenerAdapter
                 }
+                if (binding.animationView.isAnimating) return@OnSeekBarChangeListenerAdapter
+                binding.animationView.progress = progress / binding.controlBarPlayerControls.seekBar.max.toFloat()
+            }
         ))
 
         binding.animationView.addAnimatorUpdateListener {
             binding.controlBarPlayerControls.currentFrameView.text = updateFramesAndDurationLabel(binding.animationView)
 
             if (binding.controlBarPlayerControls.seekBar.isPressed) return@addAnimatorUpdateListener
-            binding.controlBarPlayerControls.seekBar.progress = ((it.animatedValue as Float) * binding.controlBarPlayerControls.seekBar.max).roundToInt()
+            binding.controlBarPlayerControls.seekBar.progress =
+                ((it.animatedValue as Float) * binding.controlBarPlayerControls.seekBar.max).roundToInt()
         }
         binding.animationView.addAnimatorListener(animatorListener)
         binding.controlBarPlayerControls.playButton.setOnClickListener {
@@ -278,23 +275,13 @@ class PlayerFragment : BaseMvRxFragment(R.layout.player_fragment) {
             binding.animationView.invalidate()
         }
 
-        binding.controlBarScale.scaleSeekBar.setOnSeekBarChangeListener(OnSeekBarChangeListenerAdapter(
-                onProgressChanged = { _, progress, _ ->
-                    val minScale = minScale()
-                    val maxScale = maxScale()
-                    val scale = minScale + progress / 100f * (maxScale - minScale)
-                    binding.animationView.scale = scale
-                    binding.controlBarScale.scaleText.text = "%.0f%%".format(scale * 100)
-                }
-        ))
-
         arrayOf(
-                binding.controlBarBackgroundColor.backgroundButton1,
-                binding.controlBarBackgroundColor.backgroundButton2,
-                binding.controlBarBackgroundColor.backgroundButton3,
-                binding.controlBarBackgroundColor.backgroundButton4,
-                binding.controlBarBackgroundColor.backgroundButton5,
-                binding.controlBarBackgroundColor.backgroundButton6
+            binding.controlBarBackgroundColor.backgroundButton1,
+            binding.controlBarBackgroundColor.backgroundButton2,
+            binding.controlBarBackgroundColor.backgroundButton3,
+            binding.controlBarBackgroundColor.backgroundButton4,
+            binding.controlBarBackgroundColor.backgroundButton5,
+            binding.controlBarBackgroundColor.backgroundButton6
         ).forEach { bb ->
             bb.setOnClickListener {
                 binding.animationContainer.setBackgroundColor(bb.getColor())
@@ -364,26 +351,26 @@ class PlayerFragment : BaseMvRxFragment(R.layout.player_fragment) {
         val minFrameView = EditText(context)
         minFrameView.setText(binding.animationView.minFrame.toInt().toString())
         AlertDialog.Builder(context)
-                .setTitle(R.string.min_frame_dialog)
-                .setView(minFrameView)
-                .setPositiveButton("Load") { _, _ ->
-                    viewModel.setMinFrame(minFrameView.text.toString().toIntOrNull() ?: 0)
-                }
-                .setNegativeButton("Cancel") { dialog, _ -> dialog.dismiss() }
-                .show()
+            .setTitle(R.string.min_frame_dialog)
+            .setView(minFrameView)
+            .setPositiveButton("Load") { _, _ ->
+                viewModel.setMinFrame(minFrameView.text.toString().toIntOrNull() ?: 0)
+            }
+            .setNegativeButton("Cancel") { dialog, _ -> dialog.dismiss() }
+            .show()
     }
 
     private fun showMaxFrameDialog() {
         val maxFrameView = EditText(context)
         maxFrameView.setText(binding.animationView.maxFrame.toInt().toString())
         AlertDialog.Builder(context)
-                .setTitle(R.string.max_frame_dialog)
-                .setView(maxFrameView)
-                .setPositiveButton("Load") { _, _ ->
-                    viewModel.setMaxFrame(maxFrameView.text.toString().toIntOrNull() ?: 0)
-                }
-                .setNegativeButton("Cancel") { dialog, _ -> dialog.dismiss() }
-                .show()
+            .setTitle(R.string.max_frame_dialog)
+            .setView(maxFrameView)
+            .setPositiveButton("Load") { _, _ ->
+                viewModel.setMaxFrame(maxFrameView.text.toString().toIntOrNull() ?: 0)
+            }
+            .setNegativeButton("Cancel") { dialog, _ -> dialog.dismiss() }
+            .show()
     }
 
     private fun View.animateVisible(visible: Boolean) {
@@ -435,7 +422,7 @@ class PlayerFragment : BaseMvRxFragment(R.layout.player_fragment) {
         }
 
         binding.animationView.setComposition(composition)
-        binding.controlBar.hardwareAccelerationToggle.isActivated = binding.animationView.layerType == View.LAYER_TYPE_HARDWARE
+        binding.controlBar.hardwareAccelerationToggle.isActivated = binding.animationView.renderMode == RenderMode.HARDWARE
         binding.animationView.setPerformanceTrackingEnabled(true)
         var renderTimeGraphRange = 4f
         binding.animationView.performanceTracker?.addFrameListener { ms ->
@@ -446,16 +433,13 @@ class PlayerFragment : BaseMvRxFragment(R.layout.player_fragment) {
             binding.controlBarPlayerControls.renderTimesGraph.invalidate()
         }
 
-        // Scale up to fill the screen
-        binding.controlBarScale.scaleSeekBar.progress = 100
-
         binding.bottomSheetKeyPaths.keyPathsRecyclerView.buildModelsWith(object : EpoxyRecyclerView.ModelBuilderCallback {
             override fun buildModels(controller: EpoxyController) {
                 binding.animationView.resolveKeyPath(KeyPath("**")).forEachIndexed { index, keyPath ->
                     BottomSheetItemViewModel_()
-                            .id(index)
-                            .text(keyPath.keysToString())
-                            .addTo(controller)
+                        .id(index)
+                        .text(keyPath.keysToString())
+                        .addTo(controller)
                 }
             }
         })
@@ -471,12 +455,13 @@ class PlayerFragment : BaseMvRxFragment(R.layout.player_fragment) {
         binding.animationView.performanceTracker?.sortedRenderTimes?.forEach {
             val view = BottomSheetItemView(requireContext()).apply {
                 set(
-                        it.first!!.replace("__container", "Total"),
-                        "%.2f ms".format(it.second!!)
+                    it.first!!.replace("__container", "Total"),
+                    "%.2f ms".format(it.second!!)
                 )
             }
             binding.bottomSheetRenderTimes.renderTimesContainer.addView(view)
         }
+        binding.animationView.performanceTracker?.clearRenderTimes()
     }
 
     private fun updateWarnings() = withState(viewModel) { state ->
@@ -497,20 +482,8 @@ class PlayerFragment : BaseMvRxFragment(R.layout.player_fragment) {
         val size = warnings.size
         binding.controlBar.warningsButton.setText(resources.getQuantityString(R.plurals.warnings, size, size))
         binding.controlBar.warningsButton.setImageResource(
-                if (warnings.isEmpty()) R.drawable.ic_sentiment_satisfied
-                else R.drawable.ic_sentiment_dissatisfied
-        )
-    }
-
-    private fun minScale() = 0.05f
-
-    private fun maxScale(): Float = withState(viewModel) { state ->
-        val screenWidth = resources.displayMetrics.widthPixels.toFloat()
-        val screenHeight = resources.displayMetrics.heightPixels.toFloat()
-        val bounds = state.composition()?.bounds
-        return@withState min(
-                screenWidth / (bounds?.width()?.toFloat() ?: screenWidth),
-                screenHeight / (bounds?.height()?.toFloat() ?: screenHeight)
+            if (warnings.isEmpty()) R.drawable.ic_sentiment_satisfied
+            else R.drawable.ic_sentiment_dissatisfied
         )
     }
 

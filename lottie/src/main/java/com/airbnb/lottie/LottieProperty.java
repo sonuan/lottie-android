@@ -1,7 +1,9 @@
 package com.airbnb.lottie;
 
+import android.graphics.Bitmap;
 import android.graphics.ColorFilter;
 import android.graphics.PointF;
+import android.graphics.Typeface;
 
 import com.airbnb.lottie.value.LottieValueCallback;
 import com.airbnb.lottie.value.ScaleXY;
@@ -71,6 +73,7 @@ public interface LottieProperty {
    * [0,100]
    */
   Integer OPACITY = 4;
+  Integer DROP_SHADOW_COLOR = 5;
   /**
    * In Px
    */
@@ -87,6 +90,10 @@ public interface LottieProperty {
    * When split dimensions is enabled. In Px
    */
   Float TRANSFORM_POSITION_Y = 16f;
+  /**
+   * In Px
+   */
+  Float BLUR_RADIUS = 17f;
   /**
    * In Px
    */
@@ -160,8 +167,57 @@ public interface LottieProperty {
    * In Dp
    */
   Float TEXT_SIZE = 14f;
-
+  /**
+   * [0,100]
+   * Lottie Android resolved drop shadows on drawing content such as fills and strokes.
+   * If a drop shadow is applied to a layer, the dynamic properties must be set on all
+   * of its child elements that draw. The easiest way to do this is to append "**" to your
+   * Keypath after the layer name.
+   */
+  Float DROP_SHADOW_OPACITY = 15f;
+  /**
+   * Degrees from 12 o'clock.
+   * Lottie Android resolved drop shadows on drawing content such as fills and strokes.
+   * If a drop shadow is applied to a layer, the dynamic properties must be set on all
+   * of its child elements that draw. The easiest way to do this is to append "**" to your
+   * Keypath after the layer name.
+   */
+  Float DROP_SHADOW_DIRECTION = 16f;
+  /**
+   * In Px
+   * Lottie Android resolved drop shadows on drawing content such as fills and strokes.
+   * If a drop shadow is applied to a layer, the dynamic properties must be set on all
+   * of its child elements that draw. The easiest way to do this is to append "**" to your
+   * Keypath after the layer name.
+   */
+  Float DROP_SHADOW_DISTANCE = 17f;
+  /**
+   * In Px
+   * Lottie Android resolved drop shadows on drawing content such as fills and strokes.
+   * If a drop shadow is applied to a layer, the dynamic properties must be set on all
+   * of its child elements that draw. The easiest way to do this is to append "**" to your
+   * Keypath after the layer name.
+   */
+  Float DROP_SHADOW_RADIUS = 18f;
+  /**
+   * Set the color filter for an entire drawable content. Can be applied to fills, strokes, images, and solids.
+   */
   ColorFilter COLOR_FILTER = new ColorFilter();
-
+  /**
+   * Array of ARGB colors that map to position stops in the original gradient.
+   * For example, a gradient from red to blue could be remapped with [0xFF00FF00, 0xFFFF00FF] (green to purple).
+   */
   Integer[] GRADIENT_COLOR = new Integer[0];
+  /**
+   * Set on text layers.
+   */
+  Typeface TYPEFACE = Typeface.DEFAULT;
+  /**
+   * Set on image layers.
+   */
+  Bitmap IMAGE = Bitmap.createBitmap(1, 1, Bitmap.Config.ALPHA_8);
+  /**
+   * Replace the text for a text layer.
+   */
+  CharSequence TEXT = "dynamic_text";
 }

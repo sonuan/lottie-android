@@ -1,20 +1,23 @@
 package com.airbnb.lottie;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RestrictTo;
 import androidx.annotation.VisibleForTesting;
 
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Extend this class to replace animation text with custom text. This can be useful to handle
- * translations.
+ * To replace static text in an animation at runtime, create an instance of this class and call {@link #setText(String, String)} to
+ * replace the hard coded animation text (input) with the text of your choosing (output).
  * <p>
- * The only method you should have to override is {@link #getText(String)}.
+ * Alternatively, extend this class and override {@link #getText(String)} and if the text hasn't already been set
+ * by {@link #setText(String, String)} then it will call {@link #getText(String)}.
  */
 public class TextDelegate {
 
   private final Map<String, String> stringMap = new HashMap<>();
+
   @Nullable private final LottieAnimationView animationView;
   @Nullable private final LottieDrawable drawable;
   private boolean cacheText = true;
@@ -42,8 +45,19 @@ public class TextDelegate {
   /**
    * Override this to replace the animation text with something dynamic. This can be used for
    * translations or custom data.
+   * @param layerName the name of the layer with text
+   * @param input the string at the layer with text
+   * @return a String to use for the specific data, by default this is the same as getText(input)
    */
-  private String getText(String input) {
+  public String getText(String layerName, String input) {
+    return getText(input);
+  }
+
+  /**
+   * Override this to replace the animation text with something dynamic. This can be used for
+   * translations or custom data.
+   */
+  public String getText(String input) {
     return input;
   }
 
@@ -72,18 +86,19 @@ public class TextDelegate {
   }
 
   /**
-   * Invalidates all cached strings
+   * Invalidates all cached strings.
    */
   public void invalidateAllText() {
     stringMap.clear();
     invalidate();
   }
 
-  public final String getTextInternal(String input) {
+  @RestrictTo(RestrictTo.Scope.LIBRARY)
+  public final String getTextInternal(String layerName, String input) {
     if (cacheText && stringMap.containsKey(input)) {
       return stringMap.get(input);
     }
-    String text = getText(input);
+    String text = getText(layerName, input);
     if (cacheText) {
       stringMap.put(input, text);
     }

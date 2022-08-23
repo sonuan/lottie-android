@@ -47,7 +47,7 @@ public class TextLayer extends BaseLayer {
     setStyle(Style.STROKE);
   }};
   private final Map<FontCharacter, List<ContentGroup>> contentsForCharacter = new HashMap<>();
-  private final LongSparseArray<String> codePointCache = new LongSparseArray<String>();
+  private final LongSparseArray<String> codePointCache = new LongSparseArray<>();
   private final TextKeyframeAnimation textAnimation;
   private final LottieDrawable lottieDrawable;
   private final LottieComposition composition;
@@ -68,9 +68,9 @@ public class TextLayer extends BaseLayer {
   @Nullable
   private BaseKeyframeAnimation<Float, Float> trackingCallbackAnimation;
   @Nullable
-  private BaseKeyframeAnimation<Float, Float> textSizeAnimation;
-  @Nullable
   private BaseKeyframeAnimation<Float, Float> textSizeCallbackAnimation;
+  @Nullable
+  private BaseKeyframeAnimation<Typeface, Typeface> typefaceCallbackAnimation;
 
   TextLayer(LottieDrawable lottieDrawable, Layer layerModel) {
     super(lottieDrawable, layerModel);
@@ -160,7 +160,7 @@ public class TextLayer extends BaseLayer {
     if (lottieDrawable.useTextGlyphs()) {
       drawTextGlyphs(documentData, parentMatrix, font, canvas);
     } else {
-      drawTextWithFont(documentData, font, parentMatrix, canvas);
+      drawTextWithFont(documentData, font, canvas);
     }
 
     canvas.restore();
@@ -171,8 +171,6 @@ public class TextLayer extends BaseLayer {
     float textSize;
     if (textSizeCallbackAnimation != null) {
       textSize = textSizeCallbackAnimation.getValue();
-    } else if (textSizeAnimation != null) {
-      textSize = textSizeAnimation.getValue();
     } else {
       textSize = documentData.size;
     }
@@ -234,24 +232,20 @@ public class TextLayer extends BaseLayer {
     }
   }
 
-  private void drawTextWithFont(
-      DocumentData documentData, Font font, Matrix parentMatrix, Canvas canvas) {
-    float parentScale = Utils.getScale(parentMatrix);
-    Typeface typeface = lottieDrawable.getTypeface(font.getFamily(), font.getStyle());
+  private void drawTextWithFont(DocumentData documentData, Font font, Canvas canvas) {
+    Typeface typeface = getTypeface(font);
     if (typeface == null) {
       return;
     }
     String text = documentData.text;
     TextDelegate textDelegate = lottieDrawable.getTextDelegate();
     if (textDelegate != null) {
-      text = textDelegate.getTextInternal(text);
+      text = textDelegate.getTextInternal(getName(), text);
     }
     fillPaint.setTypeface(typeface);
     float textSize;
     if (textSizeCallbackAnimation != null) {
       textSize = textSizeCallbackAnimation.getValue();
-    } else if (textSizeAnimation != null) {
-      textSize = textSizeAnimation.getValue();
     } else {
       textSize = documentData.size;
     }
@@ -296,6 +290,21 @@ public class TextLayer extends BaseLayer {
       // Reset canvas
       canvas.restore();
     }
+  }
+
+  @Nullable
+  private Typeface getTypeface(Font font) {
+    if (typefaceCallbackAnimation != null) {
+      Typeface callbackTypeface = typefaceCallbackAnimation.getValue();
+      if (callbackTypeface != null) {
+        return callbackTypeface;
+      }
+    }
+    Typeface drawableTypeface = lottieDrawable.getTypeface(font.getFamily(), font.getStyle());
+    if (drawableTypeface != null) {
+      return drawableTypeface;
+    }
+    return font.getTypeface();
   }
 
   private List<String> getTextLines(String text) {
@@ -450,6 +459,7 @@ public class TextLayer extends BaseLayer {
         Character.getType(codePoint) == Character.MODIFIER_SYMBOL ||
         Character.getType(codePoint) == Character.NON_SPACING_MARK ||
         Character.getType(codePoint) == Character.OTHER_SYMBOL ||
+        Character.getType(codePoint) == Character.DIRECTIONALITY_NONSPACING_MARK ||
         Character.getType(codePoint) == Character.SURROGATE;
   }
 
@@ -517,6 +527,20 @@ public class TextLayer extends BaseLayer {
         textSizeCallbackAnimation.addUpdateListener(this);
         addAnimation(textSizeCallbackAnimation);
       }
+    } else if (property == LottieProperty.TYPEFACE) {
+      if (typefaceCallbackAnimation != null) {
+        removeAnimation(typefaceCallbackAnimation);
+      }
+
+      if (callback == null) {
+        typefaceCallbackAnimation = null;
+      } else {
+        typefaceCallbackAnimation = new ValueCallbackKeyframeAnimation<>((LottieValueCallback<Typeface>) callback);
+        typefaceCallbackAnimation.addUpdateListener(this);
+        addAnimation(typefaceCallbackAnimation);
+      }
+    } else if (property == LottieProperty.TEXT) {
+      textAnimation.setStringValueCallback((LottieValueCallback<String>) callback);
     }
   }
 }

@@ -1,5 +1,6 @@
 package com.airbnb.lottie.model.layer;
 
+import android.graphics.BlurMaskFilter;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
@@ -26,8 +27,10 @@ import com.airbnb.lottie.animation.keyframe.MaskKeyframeAnimation;
 import com.airbnb.lottie.animation.keyframe.TransformKeyframeAnimation;
 import com.airbnb.lottie.model.KeyPath;
 import com.airbnb.lottie.model.KeyPathElement;
+import com.airbnb.lottie.model.content.BlurEffect;
 import com.airbnb.lottie.model.content.Mask;
 import com.airbnb.lottie.model.content.ShapeData;
+import com.airbnb.lottie.parser.DropShadowEffect;
 import com.airbnb.lottie.utils.Logger;
 import com.airbnb.lottie.utils.Utils;
 import com.airbnb.lottie.value.LottieValueCallback;
@@ -49,10 +52,10 @@ public abstract class BaseLayer
 
   @Nullable
   static BaseLayer forModel(
-      Layer layerModel, LottieDrawable drawable, LottieComposition composition) {
+      CompositionLayer compositionLayer, Layer layerModel, LottieDrawable drawable, LottieComposition composition) {
     switch (layerModel.getLayerType()) {
       case SHAPE:
-        return new ShapeLayer(drawable, layerModel);
+        return new ShapeLayer(drawable, layerModel, compositionLayer);
       case PRE_COMP:
         return new CompositionLayer(drawable, layerModel,
             composition.getPrecomps(layerModel.getRefId()), composition);
@@ -74,12 +77,14 @@ public abstract class BaseLayer
 
   private final Path path = new Path();
   private final Matrix matrix = new Matrix();
+  private final Matrix canvasMatrix = new Matrix();
   private final Paint contentPaint = new LPaint(Paint.ANTI_ALIAS_FLAG);
   private final Paint dstInPaint = new LPaint(Paint.ANTI_ALIAS_FLAG, PorterDuff.Mode.DST_IN);
   private final Paint dstOutPaint = new LPaint(Paint.ANTI_ALIAS_FLAG, PorterDuff.Mode.DST_OUT);
   private final Paint mattePaint = new LPaint(Paint.ANTI_ALIAS_FLAG);
   private final Paint clearPaint = new LPaint(PorterDuff.Mode.CLEAR);
   private final RectF rect = new RectF();
+  private final RectF canvasBounds = new RectF();
   private final RectF maskBoundsRect = new RectF();
   private final RectF matteBoundsRect = new RectF();
   private final RectF tempMaskBoundsRect = new RectF();
@@ -107,6 +112,9 @@ public abstract class BaseLayer
 
   private boolean outlineMasksAndMattes;
   @Nullable private Paint outlineMasksAndMattesPaint;
+
+  float blurMaskFilterRadius = 0f;
+  @Nullable BlurMaskFilter blurMaskFilter;
 
   BaseLayer(LottieDrawable lottieDrawable, Layer layerModel) {
     this.lottieDrawable = lottieDrawable;
@@ -174,12 +182,7 @@ public abstract class BaseLayer
     if (!layerModel.getInOutKeyframes().isEmpty()) {
       inOutAnimation = new FloatKeyframeAnimation(layerModel.getInOutKeyframes());
       inOutAnimation.setIsDiscrete();
-      inOutAnimation.addUpdateListener(new BaseKeyframeAnimation.AnimationListener() {
-        @Override
-        public void onValueChanged() {
-          setVisible(inOutAnimation.getFloatValue() == 1f);
-        }
-      });
+      inOutAnimation.addUpdateListener(() -> setVisible(inOutAnimation.getFloatValue() == 1f));
       setVisible(inOutAnimation.getValue() == 1f);
       addAnimation(inOutAnimation);
     } else {
@@ -258,7 +261,17 @@ public abstract class BaseLayer
     matrix.preConcat(transform.getMatrix());
     intersectBoundsWithMask(rect, matrix);
 
-    if (!rect.intersect(0, 0, canvas.getWidth(), canvas.getHeight())) {
+    // Intersect the mask and matte rect with the canvas bounds.
+    // If the canvas has a transform, then we need to transform its bounds by its matrix
+    // so that we know the coordinate space that the canvas is showing.
+    canvasBounds.set(0f, 0f, canvas.getWidth(), canvas.getHeight());
+    //noinspection deprecation
+    canvas.getMatrix(canvasMatrix);
+    if (!canvasMatrix.isIdentity()) {
+      canvasMatrix.invert(canvasMatrix);
+      canvasMatrix.mapRect(canvasBounds);
+    }
+    if (!rect.intersect(canvasBounds)) {
       rect.set(0, 0, 0, 0);
     }
 
@@ -339,6 +352,12 @@ public abstract class BaseLayer
       Mask mask = this.mask.getMasks().get(i);
       BaseKeyframeAnimation<?, Path> maskAnimation = this.mask.getMaskAnimations().get(i);
       Path maskPath = maskAnimation.getValue();
+      if (maskPath == null) {
+        // This should never happen but seems to happen occasionally.
+        // There is no known repro for this but is is probably best to just skip this mask if that is the case.
+        // https://github.com/airbnb/lottie-android/issues/1879
+        continue;
+      }
       path.set(maskPath);
       path.transform(matrix);
 
@@ -389,7 +408,6 @@ public abstract class BaseLayer
       // composition bounds.
       return;
     }
-    //noinspection ConstantConditions
     matteBoundsRect.set(0f, 0f, 0f, 0f);
     matteLayer.getBounds(matteBoundsRect, matrix, true);
     boolean intersects = rect.intersect(matteBoundsRect);
@@ -426,9 +444,9 @@ public abstract class BaseLayer
           break;
         case MASK_MODE_ADD:
           if (mask.isInverted()) {
-            applyInvertedAddMask(canvas, matrix, mask, maskAnimation, opacityAnimation);
+            applyInvertedAddMask(canvas, matrix, maskAnimation, opacityAnimation);
           } else {
-            applyAddMask(canvas, matrix, mask, maskAnimation, opacityAnimation);
+            applyAddMask(canvas, matrix, maskAnimation, opacityAnimation);
           }
           break;
         case MASK_MODE_SUBTRACT:
@@ -438,16 +456,16 @@ public abstract class BaseLayer
             canvas.drawRect(rect, contentPaint);
           }
           if (mask.isInverted()) {
-            applyInvertedSubtractMask(canvas, matrix, mask, maskAnimation, opacityAnimation);
+            applyInvertedSubtractMask(canvas, matrix, maskAnimation, opacityAnimation);
           } else {
-            applySubtractMask(canvas, matrix, mask, maskAnimation, opacityAnimation);
+            applySubtractMask(canvas, matrix, maskAnimation);
           }
           break;
         case MASK_MODE_INTERSECT:
           if (mask.isInverted()) {
-            applyInvertedIntersectMask(canvas, matrix, mask, maskAnimation, opacityAnimation);
+            applyInvertedIntersectMask(canvas, matrix, maskAnimation, opacityAnimation);
           } else {
-            applyIntersectMask(canvas, matrix, mask, maskAnimation, opacityAnimation);
+            applyIntersectMask(canvas, matrix, maskAnimation, opacityAnimation);
           }
           break;
       }
@@ -461,7 +479,6 @@ public abstract class BaseLayer
     if (mask.getMaskAnimations().isEmpty()) {
       return false;
     }
-    boolean areAllMasksNone = true;
     for (int i = 0; i < mask.getMasks().size(); i++) {
       if (mask.getMasks().get(i).getMaskMode() != Mask.MaskMode.MASK_MODE_NONE) {
         return false;
@@ -470,7 +487,7 @@ public abstract class BaseLayer
     return true;
   }
 
-  private void applyAddMask(Canvas canvas, Matrix matrix, Mask mask,
+  private void applyAddMask(Canvas canvas, Matrix matrix,
       BaseKeyframeAnimation<ShapeData, Path> maskAnimation, BaseKeyframeAnimation<Integer, Integer> opacityAnimation) {
     Path maskPath = maskAnimation.getValue();
     path.set(maskPath);
@@ -479,7 +496,7 @@ public abstract class BaseLayer
     canvas.drawPath(path, contentPaint);
   }
 
-  private void applyInvertedAddMask(Canvas canvas, Matrix matrix, Mask mask,
+  private void applyInvertedAddMask(Canvas canvas, Matrix matrix,
       BaseKeyframeAnimation<ShapeData, Path> maskAnimation, BaseKeyframeAnimation<Integer, Integer> opacityAnimation) {
     Utils.saveLayerCompat(canvas, rect, contentPaint);
     canvas.drawRect(rect, contentPaint);
@@ -491,15 +508,14 @@ public abstract class BaseLayer
     canvas.restore();
   }
 
-  private void applySubtractMask(Canvas canvas, Matrix matrix, Mask mask,
-      BaseKeyframeAnimation<ShapeData, Path> maskAnimation, BaseKeyframeAnimation<Integer, Integer> opacityAnimation) {
+  private void applySubtractMask(Canvas canvas, Matrix matrix, BaseKeyframeAnimation<ShapeData, Path> maskAnimation) {
     Path maskPath = maskAnimation.getValue();
     path.set(maskPath);
     path.transform(matrix);
     canvas.drawPath(path, dstOutPaint);
   }
 
-  private void applyInvertedSubtractMask(Canvas canvas, Matrix matrix, Mask mask,
+  private void applyInvertedSubtractMask(Canvas canvas, Matrix matrix,
       BaseKeyframeAnimation<ShapeData, Path> maskAnimation, BaseKeyframeAnimation<Integer, Integer> opacityAnimation) {
     Utils.saveLayerCompat(canvas, rect, dstOutPaint);
     canvas.drawRect(rect, contentPaint);
@@ -511,7 +527,7 @@ public abstract class BaseLayer
     canvas.restore();
   }
 
-  private void applyIntersectMask(Canvas canvas, Matrix matrix, Mask mask,
+  private void applyIntersectMask(Canvas canvas, Matrix matrix,
       BaseKeyframeAnimation<ShapeData, Path> maskAnimation, BaseKeyframeAnimation<Integer, Integer> opacityAnimation) {
     Utils.saveLayerCompat(canvas, rect, dstInPaint);
     Path maskPath = maskAnimation.getValue();
@@ -522,7 +538,7 @@ public abstract class BaseLayer
     canvas.restore();
   }
 
-  private void applyInvertedIntersectMask(Canvas canvas, Matrix matrix, Mask mask,
+  private void applyInvertedIntersectMask(Canvas canvas, Matrix matrix,
       BaseKeyframeAnimation<ShapeData, Path> maskAnimation, BaseKeyframeAnimation<Integer, Integer> opacityAnimation) {
     Utils.saveLayerCompat(canvas, rect, dstInPaint);
     canvas.drawRect(rect, contentPaint);
@@ -553,17 +569,11 @@ public abstract class BaseLayer
         mask.getMaskAnimations().get(i).setProgress(progress);
       }
     }
-    if (layerModel.getTimeStretch() != 0) {
-      progress /= layerModel.getTimeStretch();
-    }
     if (inOutAnimation != null) {
-      // Time stretch needs to be divided again for the inOutAnimation.
-      inOutAnimation.setProgress(progress / layerModel.getTimeStretch());
+      inOutAnimation.setProgress(progress);
     }
     if (matteLayer != null) {
-      // The matte layer's time stretch is pre-calculated.
-      float matteTimeStretch = matteLayer.layerModel.getTimeStretch();
-      matteLayer.setProgress(progress * matteTimeStretch);
+      matteLayer.setProgress(progress);
     }
     for (int i = 0; i < animations.size(); i++) {
       animations.get(i).setProgress(progress);
@@ -590,6 +600,25 @@ public abstract class BaseLayer
   @Override
   public String getName() {
     return layerModel.getName();
+  }
+
+  @Nullable
+  public BlurEffect getBlurEffect() {
+    return layerModel.getBlurEffect();
+  }
+
+  public BlurMaskFilter getBlurMaskFilter(float radius) {
+    if (blurMaskFilterRadius == radius) {
+      return blurMaskFilter;
+    }
+    blurMaskFilter = new BlurMaskFilter(radius / 2f, BlurMaskFilter.Blur.NORMAL);
+    blurMaskFilterRadius = radius;
+    return blurMaskFilter;
+  }
+
+  @Nullable
+  public DropShadowEffect getDropShadowEffect() {
+    return layerModel.getDropShadowEffect();
   }
 
   @Override

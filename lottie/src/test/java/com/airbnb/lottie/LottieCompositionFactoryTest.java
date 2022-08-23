@@ -13,12 +13,12 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertNotSame;
 import static junit.framework.Assert.assertNull;
 import static okio.Okio.buffer;
 import static okio.Okio.source;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertSame;
 
 @SuppressWarnings("ReferenceEquality")
 public class LottieCompositionFactoryTest extends BaseTest {
@@ -94,7 +94,7 @@ public class LottieCompositionFactoryTest extends BaseTest {
         JsonReader reader = JsonReader.of(buffer(source(getNeverCompletingInputStream())));
         LottieTask<LottieComposition> task1 = LottieCompositionFactory.fromJsonReader(reader, null);
         LottieTask<LottieComposition> task2 = LottieCompositionFactory.fromJsonReader(reader, null);
-        assertFalse(task1 == task2);
+        assertNotSame(task1, task2);
     }
 
     @Test
@@ -102,15 +102,7 @@ public class LottieCompositionFactoryTest extends BaseTest {
         JsonReader reader = JsonReader.of(buffer(source(getNeverCompletingInputStream())));
         LottieResult<LottieComposition> task1 = LottieCompositionFactory.fromJsonReaderSync(reader, null);
         LottieResult<LottieComposition> task2 = LottieCompositionFactory.fromJsonReaderSync(reader, null);
-        assertFalse(task1 == task2);
-    }
-
-    @Test
-    public void testCacheWorks() {
-        JsonReader reader = JsonReader.of(buffer(source(getNeverCompletingInputStream())));
-        LottieTask<LottieComposition> task1 = LottieCompositionFactory.fromJsonReader(reader, "foo");
-        LottieTask<LottieComposition> task2 = LottieCompositionFactory.fromJsonReader(reader, "foo");
-        assertTrue(task1 == task2);
+        assertNotSame(task1, task2);
     }
 
     @Test
@@ -118,9 +110,8 @@ public class LottieCompositionFactoryTest extends BaseTest {
         JsonReader reader = JsonReader.of(buffer(source(getNeverCompletingInputStream())));
         LottieCompositionFactory.setMaxCacheSize(1);
         LottieResult<LottieComposition> taskFoo1 = LottieCompositionFactory.fromJsonReaderSync(reader, "foo");
-        LottieResult<LottieComposition> taskBar = LottieCompositionFactory.fromJsonReaderSync(reader, "bar");
         LottieResult<LottieComposition> taskFoo2 = LottieCompositionFactory.fromJsonReaderSync(reader, "foo");
-        assertFalse(taskFoo1 == taskFoo2);
+        assertNotSame(taskFoo1, taskFoo2);
     }
 
     @Test(expected = IllegalArgumentException.class)

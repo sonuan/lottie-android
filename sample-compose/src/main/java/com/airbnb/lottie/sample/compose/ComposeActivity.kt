@@ -7,7 +7,11 @@ import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.*
+import androidx.compose.material.BottomNavigation
+import androidx.compose.material.BottomNavigationItem
+import androidx.compose.material.Icon
+import androidx.compose.material.Scaffold
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -15,8 +19,22 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.navigation.compose.*
-import com.airbnb.lottie.compose.LottieAnimationSpec
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.sample.compose.examples.AnimatableExamplesPage
+import com.airbnb.lottie.sample.compose.examples.BasicUsageExamplesPage
+import com.airbnb.lottie.sample.compose.examples.CachingExamplesPage
+import com.airbnb.lottie.sample.compose.examples.ContentScaleExamplesPage
+import com.airbnb.lottie.sample.compose.examples.DynamicPropertiesExamplesPage
+import com.airbnb.lottie.sample.compose.examples.ExamplesPage
+import com.airbnb.lottie.sample.compose.examples.ImagesExamplesPage
+import com.airbnb.lottie.sample.compose.examples.NetworkExamplesPage
+import com.airbnb.lottie.sample.compose.examples.TextExamplesPage
+import com.airbnb.lottie.sample.compose.examples.TransitionsExamplesPage
+import com.airbnb.lottie.sample.compose.examples.ViewPagerExamplePage
 import com.airbnb.lottie.sample.compose.lottiefiles.LottieFilesPage
 import com.airbnb.lottie.sample.compose.player.PlayerPage
 import com.airbnb.lottie.sample.compose.preview.PreviewPage
@@ -48,7 +66,7 @@ class ComposeActivity : AppCompatActivity() {
                         contentColor = Teal,
                     ) {
                         val navBackStackEntry by navController.currentBackStackEntryAsState()
-                        val currentRoute = navBackStackEntry?.arguments?.getString(KEY_ROUTE)
+                        val currentRoute = navBackStackEntry?.destination?.route
 
                         BottomNavItemData.values().forEach { item ->
                             BottomNavigationItem(
@@ -74,19 +92,29 @@ class ComposeActivity : AppCompatActivity() {
                     modifier = Modifier.padding(innerPadding)
                 ) {
                     NavHost(navController, startDestination = Route.Showcase.route) {
-                        composable(Route.Showcase.route, arguments = Route.Showcase.args) { ShowcasePage(navController) }
-                        composable(Route.Preview.route, arguments = Route.Preview.args) { PreviewPage(navController) }
-                        composable(Route.LottieFiles.route, arguments = Route.LottieFiles.args) { LottieFilesPage(navController) }
-                        composable(Route.Learn.route, arguments = Route.Learn.args) { ShowcasePage(navController) }
+                        composable(Route.Showcase.route) { ShowcasePage(navController) }
+                        composable(Route.Preview.route) { PreviewPage(navController) }
+                        composable(Route.LottieFiles.route) { LottieFilesPage(navController) }
+                        composable(Route.Examples.route) { ExamplesPage(navController) }
+                        composable(Route.BasicUsageExamples.route) { BasicUsageExamplesPage() }
+                        composable(Route.AnimatableUsageExamples.route) { AnimatableExamplesPage() }
+                        composable(Route.TransitionsExamples.route) { TransitionsExamplesPage() }
+                        composable(Route.ViewPagerExample.route) { ViewPagerExamplePage() }
+                        composable(Route.NetworkExamples.route) { NetworkExamplesPage() }
+                        composable(Route.DynamicPropertiesExamples.route) { DynamicPropertiesExamplesPage() }
+                        composable(Route.ImagesExamples.route) { ImagesExamplesPage() }
+                        composable(Route.TextExamples.route) { TextExamplesPage() }
+                        composable(Route.ContentScaleExamples.route) { ContentScaleExamplesPage() }
+                        composable(Route.CachingExamples.route) { CachingExamplesPage() }
                         composable(
                             Route.Player.fullRoute,
                             arguments = Route.Player.args
                         ) { entry ->
                             val arguments = entry.arguments ?: error("No arguments provided to ${Route.Player}")
                             val spec = when {
-                                arguments.getString("url") != null -> LottieAnimationSpec.Url(arguments.getBase64String("url"))
-                                arguments.getString("file") != null -> LottieAnimationSpec.File(arguments.getBase64String("file"))
-                                arguments.getString("asset") != null -> LottieAnimationSpec.Asset(arguments.getBase64String("asset"))
+                                arguments.getString("url") != null -> LottieCompositionSpec.Url(arguments.getBase64String("url"))
+                                arguments.getString("file") != null -> LottieCompositionSpec.File(arguments.getBase64String("file"))
+                                arguments.getString("asset") != null -> LottieCompositionSpec.Asset(arguments.getBase64String("asset"))
                                 else -> error("You must specify a url, file, or asset")
                             }
                             val backgroundColor = when (arguments.getString("backgroundColor") != null) {
@@ -102,10 +130,10 @@ class ComposeActivity : AppCompatActivity() {
     }
 
 
-    private enum class BottomNavItemData(val route: Route, @StringRes val iconRes: Int, @DrawableRes val labelRes: Int) {
+    private enum class BottomNavItemData(val route: Route, @DrawableRes val iconRes: Int, @StringRes val labelRes: Int) {
         Showcase(Route.Showcase, R.drawable.ic_showcase, R.string.bottom_tab_showcase),
         Preview(Route.Preview, R.drawable.ic_device, R.string.bottom_tab_preview),
         LottieFiles(Route.LottieFiles, R.drawable.ic_lottie_files, R.string.bottom_tab_lottie_files),
-        Docs(Route.Learn, R.drawable.ic_docs, R.string.bottom_tab_docs),
+        Docs(Route.Examples, R.drawable.ic_examples, R.string.bottom_tab_examples),
     }
 }

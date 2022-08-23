@@ -11,9 +11,9 @@ import com.airbnb.lottie.samples.utils.viewBinding
 
 @ModelView(autoLayout = ModelView.Size.WRAP_WIDTH_WRAP_HEIGHT)
 class ShowcaseDemoItemView @JvmOverloads constructor(
-        context: Context,
-        attrs: AttributeSet? = null,
-        defStyleAttr: Int = 0
+    context: Context,
+    attrs: AttributeSet? = null,
+    defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr) {
     private val binding: ItemViewShowcaseDemoBinding by viewBinding()
 
@@ -23,6 +23,6 @@ class ShowcaseDemoItemView @JvmOverloads constructor(
 
         binding.titleView.text = resources.getText(item.titleRes)
 
-        binding.cardView.setOnClickListener { item.clickListener() }
+        binding.cardView.setOnClickListener { item.clickListener(this.context.applicationContext) }
     }
 }

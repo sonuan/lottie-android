@@ -28,10 +28,12 @@ public class CompositionLayer extends BaseLayer {
   private final List<BaseLayer> layers = new ArrayList<>();
   private final RectF rect = new RectF();
   private final RectF newClipRect = new RectF();
-  private Paint layerPaint = new Paint();
+  private final Paint layerPaint = new Paint();
 
   @Nullable private Boolean hasMatte;
   @Nullable private Boolean hasMasks;
+
+  private boolean clipToCompositionBounds = true;
 
   public CompositionLayer(LottieDrawable lottieDrawable, Layer layerModel, List<Layer> layerModels,
       LottieComposition composition) {
@@ -53,7 +55,7 @@ public class CompositionLayer extends BaseLayer {
     BaseLayer mattedLayer = null;
     for (int i = layerModels.size() - 1; i >= 0; i--) {
       Layer lm = layerModels.get(i);
-      BaseLayer layer = BaseLayer.forModel(lm, lottieDrawable, composition);
+      BaseLayer layer = BaseLayer.forModel(this, lm, lottieDrawable, composition);
       if (layer == null) {
         continue;
       }
@@ -88,6 +90,10 @@ public class CompositionLayer extends BaseLayer {
     }
   }
 
+  public void setClipToCompositionBounds(boolean clipToCompositionBounds) {
+    this.clipToCompositionBounds = clipToCompositionBounds;
+  }
+
   @Override public void setOutlineMasksAndMattes(boolean outline) {
     super.setOutlineMasksAndMattes(outline);
     for (BaseLayer layer : layers) {
@@ -112,7 +118,9 @@ public class CompositionLayer extends BaseLayer {
     int childAlpha = isDrawingWithOffScreen ? 255 : parentAlpha;
     for (int i = layers.size() - 1; i >= 0; i--) {
       boolean nonEmptyClip = true;
-      if (!newClipRect.isEmpty()) {
+      // Only clip precomps. This mimics the way After Effects renders animations.
+      boolean ignoreClipOnThisLayer = !clipToCompositionBounds && "__container".equals(layerModel.getName());
+      if (!ignoreClipOnThisLayer && !newClipRect.isEmpty()) {
         nonEmptyClip = canvas.clipRect(newClipRect);
       }
       if (nonEmptyClip) {
@@ -147,7 +155,8 @@ public class CompositionLayer extends BaseLayer {
     if (timeRemapping == null) {
       progress -= layerModel.getStartProgress();
     }
-    if (layerModel.getTimeStretch() != 0) {
+    //Time stretch needs to be divided if is not "__container"
+    if (layerModel.getTimeStretch() != 0 && !"__container".equals(layerModel.getName())) {
       progress /= layerModel.getTimeStretch();
     }
     for (int i = layers.size() - 1; i >= 0; i--) {

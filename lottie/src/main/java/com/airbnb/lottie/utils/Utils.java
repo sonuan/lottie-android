@@ -66,7 +66,6 @@ public final class Utils {
   };
 
   private static final float INV_SQRT_2 = (float) (Math.sqrt(2) / 2.0);
-  private static float dpScale = -1;
 
   private Utils() {
   }
@@ -93,6 +92,7 @@ public final class Utils {
       } catch (RuntimeException rethrown) {
         throw rethrown;
       } catch (Exception ignored) {
+        // Ignore.
       }
     }
   }
@@ -121,10 +121,7 @@ public final class Utils {
     points[2] = 37394.729378f;
     points[3] = 39575.2343807f;
     matrix.mapPoints(points);
-    if (points[0] == points[2] || points[1] == points[3]) {
-      return true;
-    }
-    return false;
+    return points[0] == points[2] || points[1] == points[3];
   }
 
   public static void applyTrimPathIfNeeded(Path path, @Nullable TrimPathContent trimPath) {
@@ -252,10 +249,7 @@ public final class Utils {
   }
 
   public static float dpScale() {
-    if (dpScale == -1) {
-      dpScale = Resources.getSystem().getDisplayMetrics().density;
-    }
-    return dpScale;
+    return Resources.getSystem().getDisplayMetrics().density;
   }
 
   public static float getAnimationScale(Context context) {
@@ -311,6 +305,7 @@ public final class Utils {
   /**
    * For testing purposes only. DO NOT USE IN PRODUCTION.
    */
+  @SuppressWarnings("unused")
   public static Bitmap renderPath(Path path) {
     RectF bounds = new RectF();
     path.computeBounds(bounds, false);

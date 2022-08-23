@@ -4,6 +4,7 @@ import android.util.Pair;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RestrictTo;
 import androidx.annotation.WorkerThread;
 
 import com.airbnb.lottie.LottieComposition;
@@ -17,6 +18,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.zip.ZipInputStream;
 
+@RestrictTo(RestrictTo.Scope.LIBRARY)
 public class NetworkFetcher {
 
   @NonNull
@@ -107,7 +109,10 @@ public class NetworkFetcher {
       // in the result which is more useful than failing here.
       contentType = "application/json";
     }
-    if (contentType.contains("application/zip") || url.split("\\?")[0].endsWith(".lottie")) {
+    if (contentType.contains("application/zip") ||
+        contentType.contains("application/x-zip") ||
+        contentType.contains("application/x-zip-compressed") ||
+        url.split("\\?")[0].endsWith(".lottie")) {
       Logger.debug("Handling zip response.");
       extension = FileExtension.ZIP;
       result = fromZipStream(url, inputStream, cacheKey);
@@ -141,6 +146,6 @@ public class NetworkFetcher {
       return LottieCompositionFactory.fromJsonInputStreamSync(inputStream, null);
     }
     File file = networkCache.writeTempCacheFile(url, inputStream, FileExtension.JSON);
-    return LottieCompositionFactory.fromJsonInputStreamSync(new FileInputStream(new File(file.getAbsolutePath())), url);
+    return LottieCompositionFactory.fromJsonInputStreamSync(new FileInputStream(file.getAbsolutePath()), url);
   }
 }

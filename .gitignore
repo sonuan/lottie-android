@@ -24,6 +24,12 @@
 .idea/**/dbnavigator.xml
 .idea/deploymentTargetDropDown.xml
 .idea/misc.xml
+.idea/jarRepositories.xml
+.idea/gradle.properties
+.idea/vcs.xml
+.idea/modules.xml
+.idea/codeStyleSettings.xml
+.idea/compiler.xml
 
 # Gradle
 .idea/**/gradle.xml
@@ -31,10 +37,9 @@
 
 
 .DS_Store
-/build
+build
 /captures
 .externalNativeBuild
 *auto-save*
 credentials/*
 secring.gpg
-*/build

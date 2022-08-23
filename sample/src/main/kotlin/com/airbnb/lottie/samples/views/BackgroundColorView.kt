@@ -6,16 +6,16 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.drawable.ColorDrawable
-import androidx.annotation.ColorInt
-import androidx.core.content.ContextCompat
 import android.util.AttributeSet
 import android.view.View
+import androidx.annotation.ColorInt
+import androidx.core.content.ContextCompat
 import com.airbnb.lottie.samples.R
 
 class BackgroundColorView @JvmOverloads constructor(
-        context: Context,
-        attrs: AttributeSet? = null,
-        defStyleInt: Int = 0
+    context: Context,
+    attrs: AttributeSet? = null,
+    defStyleInt: Int = 0
 ) : View(context, attrs, defStyleInt) {
 
     private val paint = Paint().apply {
@@ -29,10 +29,10 @@ class BackgroundColorView @JvmOverloads constructor(
 
         val cx = canvas.width / 2f
         val cy = canvas.height / 2f
-        val r = Math.min(cx, cy)
+        val r = cx.coerceAtMost(cy)
         if (getColor() == Color.WHITE) {
             paint.strokeWidth =
-                    resources.getDimensionPixelSize(R.dimen.background_color_view_stroke_width).toFloat()
+                resources.getDimensionPixelSize(R.dimen.background_color_view_stroke_width).toFloat()
             paint.style = Paint.Style.STROKE
             paint.color = ContextCompat.getColor(context, R.color.background_color1_stroke)
         } else {
@@ -42,5 +42,6 @@ class BackgroundColorView @JvmOverloads constructor(
         canvas.drawCircle(cx, cy, r - paint.strokeWidth, paint)
     }
 
-    @ColorInt fun getColor() = (background as ColorDrawable).color
+    @ColorInt
+    fun getColor() = (background as ColorDrawable).color
 }

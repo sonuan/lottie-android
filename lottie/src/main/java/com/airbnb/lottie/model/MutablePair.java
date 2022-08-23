@@ -7,9 +7,7 @@ import androidx.annotation.RestrictTo;
 import androidx.core.util.Pair;
 
 /**
- * Non final version of {@link Pair}
- *
- * @param <T>
+ * Non final version of {@link Pair}.
  */
 @RestrictTo(LIBRARY)
 public class MutablePair<T> {
@@ -54,6 +52,6 @@ public class MutablePair<T> {
 
   @Override
   public String toString() {
-    return "Pair{" + String.valueOf(first) + " " + String.valueOf(second) + "}";
+    return "Pair{" + first + " " + second + "}";
   }
 }

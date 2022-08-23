@@ -11,7 +11,7 @@ import java.io.IOException;
 
 class ContentModelParser {
 
-  private static JsonReader.Options NAMES = JsonReader.Options.of(
+  private static final JsonReader.Options NAMES = JsonReader.Options.of(
       "ty",
       "d"
   );
@@ -81,7 +81,7 @@ class ContentModelParser {
         model = ShapeTrimPathParser.parse(reader, composition);
         break;
       case "sr":
-        model = PolystarShapeParser.parse(reader, composition);
+        model = PolystarShapeParser.parse(reader, composition, d);
         break;
       case "mm":
         model = MergePathsParser.parse(reader);
@@ -91,6 +91,9 @@ class ContentModelParser {
         break;
       case "rp":
         model = RepeaterParser.parse(reader, composition);
+        break;
+      case "rd":
+        model = RoundedCornersParser.parse(reader, composition);
         break;
       default:
         Logger.warning("Unknown shape type " + type);

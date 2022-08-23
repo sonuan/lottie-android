@@ -1,8 +1,11 @@
 package com.airbnb.lottie.sample.compose
 
 import android.util.Base64
-import androidx.navigation.compose.NamedNavArgument
-import androidx.navigation.compose.navArgument
+import androidx.navigation.NamedNavArgument
+import androidx.navigation.NavController
+import androidx.navigation.navArgument
+
+fun NavController.navigate(route: Route) = navigate(route.route)
 
 sealed class Route(val route: String, val args: List<NamedNavArgument> = emptyList()) {
     object Showcase : Route("showcase")
@@ -11,7 +14,27 @@ sealed class Route(val route: String, val args: List<NamedNavArgument> = emptyLi
 
     object LottieFiles : Route("lottiefiles")
 
-    object Learn : Route("learn")
+    object Examples : Route("examples")
+
+    object BasicUsageExamples : Route("basic usage examples")
+
+    object AnimatableUsageExamples : Route("LottieAnimatable examples")
+
+    object TransitionsExamples : Route("transitions examples")
+
+    object ViewPagerExample : Route("view pager example")
+
+    object NetworkExamples : Route("network examples")
+
+    object ImagesExamples : Route("image examples")
+
+    object TextExamples : Route("text examples")
+
+    object DynamicPropertiesExamples : Route("dynamic properties examples")
+
+    object ContentScaleExamples : Route("ContentScale examples")
+
+    object CachingExamples : Route("Caching examples")
 
     object Player : Route(
         "player",

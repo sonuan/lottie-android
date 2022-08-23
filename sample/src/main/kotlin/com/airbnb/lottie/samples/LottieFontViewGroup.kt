@@ -14,10 +14,9 @@ import com.airbnb.lottie.LottieAnimationView
 import com.airbnb.lottie.LottieComposition
 import com.airbnb.lottie.LottieCompositionFactory
 import com.airbnb.lottie.LottieDrawable
-import java.util.*
 
 class LottieFontViewGroup @JvmOverloads constructor(
-        context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
+    context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr) {
     private val views = ArrayList<View>()
 
@@ -26,16 +25,16 @@ class LottieFontViewGroup @JvmOverloads constructor(
     init {
         isFocusableInTouchMode = true
         LottieCompositionFactory.fromAsset(context, "Mobilo/BlinkingCursor.json")
-                .addListener {
-                    cursorView.layoutParams = FrameLayout.LayoutParams(
-                            ViewGroup.LayoutParams.WRAP_CONTENT,
-                            ViewGroup.LayoutParams.WRAP_CONTENT
-                    )
-                    cursorView.setComposition(it)
-                    cursorView.repeatCount = LottieDrawable.INFINITE
-                    cursorView.playAnimation()
-                    addView(cursorView)
-                }
+            .addListener {
+                cursorView.layoutParams = LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                )
+                cursorView.setComposition(it)
+                cursorView.repeatCount = LottieDrawable.INFINITE
+                cursorView.playAnimation()
+                addView(cursorView)
+            }
     }
 
     private fun addSpace() {
@@ -100,8 +99,10 @@ class LottieFontViewGroup @JvmOverloads constructor(
                 currentX = paddingLeft
                 currentY += view.measuredHeight
             }
-            view.layout(currentX, currentY, currentX + view.measuredWidth,
-                    currentY + view.measuredHeight)
+            view.layout(
+                currentX, currentY, currentX + view.measuredWidth,
+                currentY + view.measuredHeight
+            )
             currentX += view.width
         }
     }
@@ -149,7 +150,7 @@ class LottieFontViewGroup @JvmOverloads constructor(
         // }
         val fileName = "Mobilo/$letter.json"
         LottieCompositionFactory.fromAsset(context, fileName)
-                .addListener { addComposition(it) }
+            .addListener { addComposition(it) }
 
         return true
     }
@@ -173,9 +174,9 @@ class LottieFontViewGroup @JvmOverloads constructor(
 
     private fun addComposition(composition: LottieComposition) {
         val lottieAnimationView = LottieAnimationView(context)
-        lottieAnimationView.layoutParams = FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
+        lottieAnimationView.layoutParams = LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
         )
         lottieAnimationView.setComposition(composition)
         lottieAnimationView.playAnimation()
@@ -189,9 +190,9 @@ class LottieFontViewGroup @JvmOverloads constructor(
 
     private fun createSpaceView(): View {
         val spaceView = View(context)
-        spaceView.layoutParams = FrameLayout.LayoutParams(
-                resources.getDimensionPixelSize(R.dimen.font_space_width),
-                ViewGroup.LayoutParams.WRAP_CONTENT
+        spaceView.layoutParams = LayoutParams(
+            resources.getDimensionPixelSize(R.dimen.font_space_width),
+            ViewGroup.LayoutParams.WRAP_CONTENT
         )
         spaceView.tag = "Space"
         return spaceView
