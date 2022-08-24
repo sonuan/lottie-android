@@ -1,5 +1,30 @@
-# 5.0.0
+# 5.2.0
+### Bugs Fixed
+* De-dupe gradient stops. On pre-Oreo devices, if you had color and opacity stops in the same place and used hardware acceleration, you may have seen artifacts at the stop positions as of 5.1.1 [#20814](https://github.com/airbnb/lottie-android/pull/2081)
+
+# 5.1.1
 ### New Features
+* Added support for gradient opacity stops at different points than color stops ([#2062](https://github.com/airbnb/lottie-android/pull/2062))
+* Allow notifying LottieDrawable that system animations are disabled ([#2063](https://github.com/airbnb/lottie-android/pull/2063))
+
+### Bugs Fixed
+* Removed some rounding errors that occurred when setting min/max frames ([#2064](https://github.com/airbnb/lottie-android/pull/2064))
+* Clear onVisibleAction one it is consumed ([#2066](https://github.com/airbnb/lottie-android/pull/2066))
+* Fixed a Xiaomi Android 10 specific crash ([#2061](https://github.com/airbnb/lottie-android/pull/2061))
+* Made LottieAnimationView.start() mimic playAnimation ([#2056](https://github.com/airbnb/lottie-android/pull/2056))
+* Remove @RestrictTo from LottieNetworkFetcher ([#2049](https://github.com/airbnb/lottie-android/pull/2049))
+
+# 5.0.3
+### Bugs Fixed
+* Invalidate the software renering bitmap when invalidate is called ([#2034](https://github.com/airbnb/lottie-android/pull/2034))
+
+# 5.0.2
+### Bugs Fixed
+* Prevent a crash when using software rendering before a composition has been set ([#2025](https://github.com/airbnb/lottie-android/pull/2025))
+
+# 5.0.1
+### New Features
+* [Removed API] Removed the `setScale(float)` APIs from `LottieAnimationView` and `LottieDrawable`. The expected behavior was highly ambiguous when paired with other scale types and canvas transformations. For the vast majority of cases, ImageView.ScaleType should be sufficient. For remaining cases, you may apply transformations to Canvas and use `LottieDrawable#draw` directly. 
 * Added support for the "Rounded Corners" effect on Shape and Rect layers ([#1953](https://github.com/airbnb/lottie-android/pull/1953))
 * Prior to 5.0, LottieAnimationView would _always_ call [setLayerType](https://developer.android.com/reference/android/view/View#setLayerType(int,%20android.graphics.Paint)) with either [HARDWARE](https://developer.android.com/reference/android/view/View#LAYER_TYPE_HARDWARE) or [SOFTWARE](https://developer.android.com/reference/android/view/View#LAYER_TYPE_SOFTWARE). In the hardware case, this would case Android to allocate a dedicated hardware buffer for the animation that had to be uploaded to the GPU separately. In the software case, LottieAnimationView would rely on View's internal [drawing cache](https://developer.android.com/reference/android/view/View#isDrawingCacheEnabled()).
 
@@ -13,13 +38,8 @@
 
   * Reduced memory consumption. In the hardware case, no new memory is allocated. In the software case, Lottie will create a bitmap that is the intersection of your View/Composition bounds mapped with the drawing transformation which often yields a surface are that is smaller than the entire LottieAnimationView.
   * lottie-compose now supports setting a RenderMode.
-  * Custom uses of LottieDrawable now support setting a RenderMode via [useSoftwareRendering](https://github.com/airbnb/lottie-android/blob/c5b8318c7cf205e95db143955acbfc69f86bc339/lottie/src/main/java/com/airbnb/lottie/LottieDrawable.java#L329).
-  * Lottie can now render outside of its composition bounds via [setClipToCompositionBounds](https://github.com/airbnb/lottie-android/blob/c5b8318c7cf205e95db143955acbfc69f86bc339/lottie/src/main/java/com/airbnb/lottie/LottieDrawable.java#L218).
-    Unless you are using one of the new APIs, you should not have to change anything in your code as a result of this page. It is intended to be an entirely internal implementation detail
-    that should improve performance by default and allow for new functionality.
-    
-    Please report any bugs or unexpected behavior that you experience as a result of this change.
-    [#1952](https://github.com/airbnb/lottie-android/pull/1952), [#1973](https://github.com/airbnb/lottie-android/pull/1973).
+  * Custom uses of LottieDrawable now support setting a RenderMode via [setRenderMode](https://github.com/airbnb/lottie-android/blob/c5b8318c7cf205e95db143955acbfc69f86bc339/lottie/src/main/java/com/airbnb/lottie/LottieDrawable.java#L329).
+* Lottie can now render outside of its composition bounds. To allow this with views such as LottieAnimationView, set `clipToCompositionBounds` to false on `LottieDrawable` or `LottieAnimationView` and `clipChildren` to false on the parent view. For Compose, use the `clipToCompositionBounds` parameter.
 * Prior to 5.0, LottieAnimationView handled all animation controls when the view's visibility or attach state changed. This worked fine for consumers of LottieAnimationView. However, custom uses of LottieDrawable were prone to leaking infinite animators if they did not properly handle cancelling animations correctly. This opens up the possibility for unexpected behavior and increased battery drain. Lottie now behaves more like animated drawables in the platform and moves this logic into the Drawable via its [setVisible](https://developer.android.com/reference/android/graphics/drawable/Drawable#setVisible(boolean,%20boolean)) API. This should lead to no explicit behavior changes if you are using LottieAnimationView. However, if you are using LottieDrawable directly and were explicitly pausing/cancelling animations on lifecycle changes, you may want to cross check your expected behavior with that of LottieDrawable after this update. This change also resolved a long standing bug when Lottie is used in RecyclerViews due to the complex way in which RecyclerView handles View lifecycles ([#1495](https://github.com/airbnb/lottie-android/issues/1495)).
   [#1981](https://github.com/airbnb/lottie-android/issues/1981)
 * Add an API [setClipToCompositionBounds](https://github.com/airbnb/lottie-android/blob/c5b8318c7cf205e95db143955acbfc69f86bc339/lottie/src/main/java/com/airbnb/lottie/LottieDrawable.java#L218) on LottieAnimationView, LottieDrawable, and the LottieAnimation composable to prevent Lottie from clipping animations to the composition bounds.

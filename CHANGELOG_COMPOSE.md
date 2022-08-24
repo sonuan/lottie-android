@@ -1,4 +1,31 @@
+# 5.2.0
+* [BREAKING CHANGE]
+LottieAnimation now takes progress as a `() -> Float` rather than a `Float`. This allows Lottie to redraw without triggering a recomposition every time progress updates. For more information, refer to the Compose [phase docs](https://developer.android.com/jetpack/compose/phases). The existing API will exist as deprecated for one more release but will then be removed. For the vast majority of use cases:
+
+```kotlin
+LottieAnimation(composition, progress)
+```
+will become:
+
+```kotlin
+LottieAnimation(composition, { progress })
+```
+
+or
+
+```kotlin
+LottieAnimation(
+  composition = composition,
+  progress = { progress }
+)
+```
+[#2078](https://github.com/airbnb/lottie-android/pull/2078).
+
+# 5.1.1
+* Add support for completable animations in tests ([#2051](https://github.com/airbnb/lottie-android/pull/2051))
+
 # 5.0.0
+* You can tell Lottie to render the full animation even if it extends beyond the original composition bounds by setting `clipToCompositionBounds` to false.
 * Add support for dynamic text via `LottieProperty.TEXT` and the existing dynamic property APIs ([#1995](https://github.com/airbnb/lottie-android/issues/1995))
 * Respect Android system animator scale (include 0 for modes like battery saver) ([#2000](https://github.com/airbnb/lottie-android/pull/2000))
 * Added support for loading animations via content provider URIs (LottieCompositionSpec.ContentProvider) ([#1982](https://github.com/airbnb/lottie-android/pull/1982))

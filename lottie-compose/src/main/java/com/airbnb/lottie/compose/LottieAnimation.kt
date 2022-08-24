@@ -1,7 +1,6 @@
 package com.airbnb.lottie.compose
 
 import android.graphics.Matrix
-import android.os.Build
 import androidx.annotation.FloatRange
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
@@ -33,12 +32,12 @@ import kotlin.math.roundToInt
  *
  * @param composition The composition that will be rendered. To generate a [LottieComposition], you can use
  *                    [rememberLottieComposition].
- * @param progress The progress (between 0 and 1) that should be rendered. If you want to render a specific
- *                 frame, you can use [LottieComposition.getFrameForProgress]. In most cases, you will want
- *                 to use one of the overloaded LottieAnimation composables that drives the animation for you.
- *                 The overloads that have isPlaying as a parameter instead of progress will drive the
- *                 animation automatically. You may want to use this version if you want to drive the animation
- *                 from your own Animatable or via events such as download progress or a gesture.
+ * @param progress A provider for the progress (between 0 and 1) that should be rendered. If you want to render a
+ *                         specific frame, you can use [LottieComposition.getFrameForProgress]. In most cases, you will want
+ *                         to use one of the overloaded LottieAnimation composables that drives the animation for you.
+ *                         The overloads that have isPlaying as a parameter instead of progress will drive the
+ *                         animation automatically. You may want to use this version if you want to drive the animation
+ *                         from your own Animatable or via events such as download progress or a gesture.
  * @param outlineMasksAndMattes Enable this to debug slow animations by outlining masks and mattes.
  *                              The performance overhead of the masks and mattes will be proportional to the
  *                              surface area of all of the masks/mattes combined.
@@ -70,7 +69,7 @@ import kotlin.math.roundToInt
 @Composable
 fun LottieAnimation(
     composition: LottieComposition?,
-    @FloatRange(from = 0.0, to = 1.0) progress: Float,
+    progress: () -> Float,
     modifier: Modifier = Modifier,
     outlineMasksAndMattes: Boolean = false,
     applyOpacityToLayers: Boolean = false,
@@ -85,15 +84,13 @@ fun LottieAnimation(
     val drawable = remember { LottieDrawable() }
     val matrix = remember { Matrix() }
     var setDynamicProperties: LottieDynamicProperties? by remember { mutableStateOf(null) }
-    val useSoftwareRendering: Boolean = remember(renderMode, composition) {
-        renderMode.useSoftwareRendering(Build.VERSION.SDK_INT, composition?.hasDashPattern() ?: false, composition?.maskAndMatteCount ?: 0)
-    }
 
     if (composition == null || composition.duration == 0f) return Box(modifier)
 
+    val dpScale = Utils.dpScale()
     Canvas(
         modifier = modifier
-            .size((composition.bounds.width() / Utils.dpScale()).dp, (composition.bounds.height() / Utils.dpScale()).dp)
+            .size((composition.bounds.width() / dpScale).dp, (composition.bounds.height() / dpScale).dp)
     ) {
         drawIntoCanvas { canvas ->
             val compositionSize = Size(composition.bounds.width().toFloat(), composition.bounds.height().toFloat())
@@ -106,6 +103,7 @@ fun LottieAnimation(
             matrix.preScale(scale.scaleX, scale.scaleY)
 
             drawable.enableMergePathsForKitKatAndAbove(enableMergePaths)
+            drawable.renderMode = renderMode
             drawable.composition = composition
             if (dynamicProperties !== setDynamicProperties) {
                 setDynamicProperties?.removeFrom(drawable)
@@ -114,10 +112,9 @@ fun LottieAnimation(
             }
             drawable.setOutlineMasksAndMattes(outlineMasksAndMattes)
             drawable.isApplyingOpacityToLayersEnabled = applyOpacityToLayers
-            drawable.useSoftwareRendering(useSoftwareRendering)
             drawable.maintainOriginalImageBounds = maintainOriginalImageBounds
             drawable.clipToCompositionBounds = clipToCompositionBounds
-            drawable.progress = progress
+            drawable.progress = progress()
             drawable.setBounds(0, 0, composition.bounds.width(), composition.bounds.height())
             drawable.draw(canvas.nativeCanvas, matrix)
         }
@@ -125,8 +122,45 @@ fun LottieAnimation(
 }
 
 /**
+ * This is like [LottieAnimation] except that it takes a raw progress parameter instead of taking a progress provider.
+ *
+ * @see LottieAnimation
+ */
+@Composable
+@Deprecated("Pass progress as a lambda instead of a float. This overload will be removed in the next release.")
+fun LottieAnimation(
+    composition: LottieComposition?,
+    @FloatRange(from = 0.0, to = 1.0) progress: Float,
+    modifier: Modifier = Modifier,
+    outlineMasksAndMattes: Boolean = false,
+    applyOpacityToLayers: Boolean = false,
+    enableMergePaths: Boolean = false,
+    renderMode: RenderMode = RenderMode.AUTOMATIC,
+    maintainOriginalImageBounds: Boolean = false,
+    dynamicProperties: LottieDynamicProperties? = null,
+    alignment: Alignment = Alignment.Center,
+    contentScale: ContentScale = ContentScale.Fit,
+    clipToCompositionBounds: Boolean = true,
+) {
+    LottieAnimation(
+        composition,
+        { progress },
+        modifier,
+        outlineMasksAndMattes,
+        applyOpacityToLayers,
+        enableMergePaths,
+        renderMode,
+        maintainOriginalImageBounds,
+        dynamicProperties,
+        alignment,
+        contentScale,
+        clipToCompositionBounds,
+    )
+}
+
+/**
  * This is like [LottieAnimation] except that it handles driving the animation via [animateLottieCompositionAsState]
- * instead of taking a raw progress parameter.
+ * instead of taking a progress provider.
  *
  * @see LottieAnimation
  * @see animateLottieCompositionAsState
@@ -159,18 +193,18 @@ fun LottieAnimation(
         iterations,
     )
     LottieAnimation(
-        composition,
-        progress,
-        modifier,
-        outlineMasksAndMattes,
-        applyOpacityToLayers,
-        enableMergePaths,
-        renderMode,
-        maintainOriginalImageBounds,
-        dynamicProperties,
-        alignment,
-        contentScale,
-        clipToCompositionBounds,
+        composition = composition,
+        progress = { progress },
+        modifier = modifier,
+        outlineMasksAndMattes = outlineMasksAndMattes,
+        applyOpacityToLayers = applyOpacityToLayers,
+        enableMergePaths = enableMergePaths,
+        renderMode = renderMode,
+        maintainOriginalImageBounds = maintainOriginalImageBounds,
+        dynamicProperties = dynamicProperties,
+        alignment = alignment,
+        contentScale = contentScale,
+        clipToCompositionBounds = clipToCompositionBounds,
     )
 }
 
